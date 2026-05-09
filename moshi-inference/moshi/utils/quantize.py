@@ -17,7 +17,13 @@ class QLinear(nn.Module):
         weight = linear.weight
         assert weight.data.dtype.is_floating_point
         assert linear.bias is None
-        CB, SCB, _ = bnbF.int8_vectorwise_quant(weight.data.to(torch.float16))  # type: ignore
+
+        if weight.device.type == "meta":
+            CB = torch.empty_like(weight.data, dtype=torch.int8, device="meta")
+            SCB = torch.empty((weight.shape[0],), dtype=torch.float32, device="meta")
+        else:
+            CB, SCB, _ = bnbF.int8_vectorwise_quant(weight.data.to(torch.float16))  # type: ignore
+
         self.weight = nn.Parameter(CB, requires_grad=False)
         self.weight_scb = nn.Parameter(SCB, requires_grad=False)
 
